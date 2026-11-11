@@ -1,0 +1,1 @@
+{ "name": "subagent-model-selector", "version": "0.1.0", "description": "Assigns each subagent a cost-fit model: Haiku for search and mechanical work, Sonnet for coding, Opus with high effort for review.", "author": { "name": "anhnguyenuiux" }, "license": "MIT", "types": "./types/index.d.ts" }
