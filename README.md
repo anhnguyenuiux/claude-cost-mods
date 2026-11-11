@@ -1,6 +1,6 @@
 # claude-cost-mods
 
-Two Claude Code mods that cut spend on simple work. Both run locally and send no prompt text anywhere.
+Claude Code mods: two that cut spend on simple work, and one that lists enabled plugins. All run locally and send no prompt text anywhere.
 
 ## effort-optimizer
 
@@ -25,6 +25,10 @@ Chooses a model for each subagent that names none:
 
 Forks, teammates, resumed agents, and calls that set a model themselves are left alone. The role is guessed from the agent type, its description and the start of its prompt, so oddly named agents fall back to sonnet.
 
+## mod-list
+
+Type `/mod-list` to open a side pane listing every enabled plugin with its version and scope. It runs `claude plugin list --json` locally; the Refresh button reloads the list.
+
 ## Install
 
 At the prompt of a terminal session:
@@ -39,6 +43,7 @@ From a shell:
 ```
 claude plugin install effort-optimizer --marketplace anhnguyenuiux/claude-cost-mods
 claude plugin install subagent-model-selector --marketplace anhnguyenuiux/claude-cost-mods
+claude plugin install mod-list --marketplace anhnguyenuiux/claude-cost-mods
 ```
 
 In the desktop app, where `/plugin` does not run: click + next to the prompt box, then Plugins, Add marketplace with `anhnguyenuiux/claude-cost-mods`, then Add plugin.

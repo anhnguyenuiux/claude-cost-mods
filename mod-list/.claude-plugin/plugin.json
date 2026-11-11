@@ -1,0 +1,1 @@
+{ "name": "mod-list", "version": "0.1.0", "description": "/mod-list opens a side pane listing the enabled plugins with version and scope.", "author": { "name": "anhnguyenuiux" }, "license": "MIT", "types": "./types/index.d.ts" }

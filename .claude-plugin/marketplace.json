@@ -1,8 +1,23 @@
 {
   "name": "claude-cost-mods",
-  "owner": { "name": "anhnguyenuiux" },
+  "owner": {
+    "name": "anhnguyenuiux"
+  },
   "plugins": [
-    { "name": "effort-optimizer", "source": "./effort-optimizer", "description": "Sets each turn's reasoning effort from local rules on the prompt." },
-    { "name": "subagent-model-selector", "source": "./subagent-model-selector", "description": "Assigns each subagent a cost-fit model: Haiku, Sonnet, or Opus for review." }
+    {
+      "name": "effort-optimizer",
+      "source": "./effort-optimizer",
+      "description": "Sets each turn's reasoning effort from local rules on the prompt."
+    },
+    {
+      "name": "subagent-model-selector",
+      "source": "./subagent-model-selector",
+      "description": "Assigns each subagent a cost-fit model: Haiku, Sonnet, or Opus for review."
+    },
+    {
+      "name": "mod-list",
+      "source": "./mod-list",
+      "description": "/mod-list opens a side pane listing the enabled plugins."
+    }
   ]
 }
