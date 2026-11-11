@@ -1,9 +1,11 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { Pick } from '../types'
+import type { Level, Pick } from '../types'
 
 const last = atom({ plugin: 'effort-optimizer', key: 'last' } as const, null)
+// Set by "Switch, and auto-adjust from now": the session applies picks unasked.
+const isAuto = atom({ plugin: 'effort-optimizer', key: 'isAuto' } as const, false)
 
 // High stakes: wrong answers are expensive, so think hard.
 const HIGH =
@@ -17,38 +19,63 @@ const WORK =
 
 export function pickEffort(text: string): Pick {
   const t = text.trim()
-  const files = (t.match(/[\w./\\-]+\.(tsx?|jsx?|css|json|md|py|go|rs)\b/g) ?? []).length
+  const files = (t.match(/[\w./\-]+\.(tsx?|jsx?|css|json|md|py|go|rs)\b/g) ?? []).length
 
   if (HIGH.test(t)) return { effort: 'high', reason: 'high-stakes keyword' }
   if (t.length > 1200 || files >= 4) return { effort: 'high', reason: 'large or multi-file task' }
   if (t.length < 100 && LOW.test(t) && !WORK.test(t)) {
-    return { effort: 'low', reason: 'short lookup/mechanical' }
+    return { effort: 'low', reason: 'short lookup or mechanical task' }
   }
   if (t.length < 40 && files === 0) return { effort: 'low', reason: 'very short prompt' }
   return { effort: 'medium', reason: WORK.test(t) ? 'engineering task' : 'default' }
 }
 
-export const register: Register = on => {
-  const picks = new Map<string, Pick>()
+const label = (level: string): string => level.charAt(0).toUpperCase() + level.slice(1)
 
-  on('turn.start', ($, e, next) => {
-    // Main loop only; a subagent's effort is not this mod's business.
-    if (e.agentId === undefined && e.text !== '') picks.set(e.turnId, pickEffort(e.text))
+export const register: Register = on => {
+  // Picks the person accepted, by turn. Module variables restart on reload,
+  // which only costs one more question.
+  const picks = new Map<string, Pick>()
+  // The effort the session itself runs at, as last seen before any rewrite.
+  let sessionEffort: string | undefined
+
+  on('turn.start', async ($, e, next) => {
+    // Main loop only, and only a typed prompt.
+    if (e.agentId !== undefined || e.text === '') return next(e)
+
+    const pick = pickEffort(e.text)
+    if (pick.effort === sessionEffort) return next(e)
+
+    if (await read($, isAuto)) {
+      picks.set(e.turnId, pick)
+      return next(e)
+    }
+
+    const keep = sessionEffort === undefined ? 'Keep current' : `Keep ${label(sessionEffort)}`
+    const switchTo = `Switch to ${label(pick.effort)}`
+    const switchAuto = 'Switch, and auto-adjust from now'
+    try {
+      const answer = await $.ui.ask(
+        `This looks like a ${label(pick.effort)} effort task: ${pick.reason}. Switch before Claude starts?`,
+        { header: 'Effort', options: [switchTo, switchAuto, keep] },
+      )
+      if (answer === switchTo || answer === switchAuto) picks.set(e.turnId, pick)
+      if (answer === switchAuto) await update($, isAuto, () => true)
+    } catch {
+      // Dismissed, or nobody to ask: keep the session's effort.
+    }
     return next(e)
   })
 
   on('turn.step', async function* ($, e, next) {
-    const pick = e.agentId === undefined ? picks.get(e.turnId) : undefined
-    // No pick (continuation turn), or the model takes no effort: leave it.
+    if (e.agentId !== undefined) return yield* next(e)
+    if (e.index === 0 && e.effort !== undefined) sessionEffort = String(e.effort)
+
+    const pick = picks.get(e.turnId)
     if (pick === undefined || e.effort === undefined) return yield* next(e)
 
-    if (e.index === 0) {
-      await update($, last, () => pick)
-      if (pick.effort !== e.effort) {
-        $.ui.toast(`effort ${e.effort} → ${pick.effort} (${pick.reason})`)
-      }
-    }
-    return yield* next({ ...e, effort: pick.effort })
+    if (e.index === 0) await update($, last, () => pick)
+    return yield* next({ ...e, effort: pick.effort as Level })
   })
 
   on('turn.complete', ($, e, next) => {
@@ -60,11 +87,12 @@ export const register: Register = on => {
     const pick = await read($, last)
     if (e.props.hasSurvey || pick === null) return next(e)
 
+    const auto = await read($, isAuto)
     const { Box, Text } = $.ui.resolve(e)
     return (
       <Box>
         <Text dimColor>
-          Effort: {pick.effort} ({pick.reason})
+          Effort: {pick.effort} ({pick.reason}){auto ? ' · auto' : ''}
         </Text>
       </Box>
     )

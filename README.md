@@ -10,7 +10,7 @@ Picks the reasoning effort for each main-conversation turn from rules on the pro
 - **low**: short lookups and mechanical edits (explain, list, rename, git status), or very short prompts
 - **medium**: everything else
 
-A band above the prompt shows the chosen effort and why, and a toast appears when it differs from the session's level. It does nothing on models without an effort setting.
+Before a turn whose pick differs from the session level, it asks: switch, switch and auto-adjust for the rest of the session, or keep. A band above the prompt shows the applied effort and why. It does nothing on models without an effort setting.
 
 ## subagent-model-selector
 
@@ -27,7 +27,7 @@ Forks, teammates, resumed agents, and calls that set a model themselves are left
 
 ## mod-list
 
-Type `/mod-list` to open a side pane listing every enabled plugin with its version and scope. It runs `claude plugin list --json` locally; the Refresh button reloads the list.
+Type `/mod-list` to open a side pane with every installed plugin: an icon by kind, name, version, scope, a short description, the command that opens it, and an on/off switch. Switching runs `claude plugin enable` or `disable`, and takes effect after a session restart. Edit the COMMANDS table at the top of `mod-list/hooks/register.tsx` to show the command for your mods. Runs `claude plugin list --json` locally; Refresh reloads the list.
 
 ## Install
 
